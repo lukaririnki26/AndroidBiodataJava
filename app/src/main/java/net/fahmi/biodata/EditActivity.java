@@ -47,7 +47,6 @@ public class EditActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit);
-        uri =null;
         dbHelper = new DBHelper(this);
         id = getIntent().getLongExtra(DBHelper.row_id, 0);
 
@@ -70,8 +69,14 @@ public class EditActivity extends AppCompatActivity {
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                uri=null;
                 CropImage.activity(uri).start(EditActivity.this);
+                Cursor c =  dbHelper.oneData(id);
+                if(c.moveToFirst()) {
+                    String foto = c.getString(c.getColumnIndex(DBHelper.row_img));
+                    uri = Uri.parse(foto);
+                }
+                c.close();
             }
         });
         getData();
@@ -87,6 +92,7 @@ public class EditActivity extends AppCompatActivity {
             String jk = c.getString(c.getColumnIndex(DBHelper.row_jk));
             String alamat = c.getString(c.getColumnIndex(DBHelper.row_alamat));
             String foto = c.getString(c.getColumnIndex(DBHelper.row_img));
+            uri= Uri.parse(foto);
             edit_nomor.setText(nomor);
             edit_nama.setText(nama);
             if(jk.equals("Laki-Laki")){
@@ -138,7 +144,6 @@ public class EditActivity extends AppCompatActivity {
                 String tgl = edit_tgl.getText().toString().trim();
                 String jk = edit_jk.getSelectedItem().toString().trim();
                 String alamat = edit_alamat.getText().toString().trim();
-                Cursor c =  dbHelper.oneData(id);
 
                 ContentValues values = new ContentValues();
 
@@ -148,15 +153,7 @@ public class EditActivity extends AppCompatActivity {
                 values.put(DBHelper.row_tgl,tgl);
                 values.put(DBHelper.row_jk,jk);
                 values.put(DBHelper.row_alamat,alamat);
-                if(c.moveToFirst()) {
-                    String foto = c.getString(c.getColumnIndex(DBHelper.row_img));
-                    if(!uri.equals("null")){
-                        values.put(DBHelper.row_img,String.valueOf(uri));
-                    }else{
-                        values.put(DBHelper.row_img,String.valueOf(foto));
-                    }
-                }
-                c.close();
+                values.put(DBHelper.row_img,String.valueOf(uri));
                 if(nama.equals("")|| nomor.equals("")|| tempat.equals("")||tgl.equals("")||alamat.equals("")){
                     Toast.makeText(EditActivity.this, "Empty value not permitted", Toast.LENGTH_SHORT).show();
 
@@ -204,8 +201,10 @@ public class EditActivity extends AppCompatActivity {
                 imageView.setImageURI(resulturi);
             } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
                 Exception error = result.getError();
+
             }
         }
+
     }
 
 
