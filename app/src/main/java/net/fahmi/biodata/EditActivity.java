@@ -47,7 +47,7 @@ public class EditActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit);
-
+        uri =null;
         dbHelper = new DBHelper(this);
         id = getIntent().getLongExtra(DBHelper.row_id, 0);
 
@@ -70,7 +70,8 @@ public class EditActivity extends AppCompatActivity {
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                CropImage.startPickImageActivity(EditActivity.this);
+
+                CropImage.activity(uri).start(EditActivity.this);
             }
         });
         getData();
@@ -103,6 +104,7 @@ public class EditActivity extends AppCompatActivity {
             }
 
         }
+        c.close();
     }
 
     private void showDateDialog() {
@@ -136,6 +138,7 @@ public class EditActivity extends AppCompatActivity {
                 String tgl = edit_tgl.getText().toString().trim();
                 String jk = edit_jk.getSelectedItem().toString().trim();
                 String alamat = edit_alamat.getText().toString().trim();
+                Cursor c =  dbHelper.oneData(id);
 
                 ContentValues values = new ContentValues();
 
@@ -145,8 +148,15 @@ public class EditActivity extends AppCompatActivity {
                 values.put(DBHelper.row_tgl,tgl);
                 values.put(DBHelper.row_jk,jk);
                 values.put(DBHelper.row_alamat,alamat);
-                values.put(DBHelper.row_img,String.valueOf(uri));
-
+                if(c.moveToFirst()) {
+                    String foto = c.getString(c.getColumnIndex(DBHelper.row_img));
+                    if(!uri.equals("null")){
+                        values.put(DBHelper.row_img,String.valueOf(uri));
+                    }else{
+                        values.put(DBHelper.row_img,String.valueOf(foto));
+                    }
+                }
+                c.close();
                 if(nama.equals("")|| nomor.equals("")|| tempat.equals("")||tgl.equals("")||alamat.equals("")){
                     Toast.makeText(EditActivity.this, "Empty value not permitted", Toast.LENGTH_SHORT).show();
 
@@ -185,33 +195,18 @@ public class EditActivity extends AppCompatActivity {
     @TargetApi(Build.VERSION_CODES.M)
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CropImage.PICK_IMAGE_PERMISSIONS_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            Uri imguri = CropImage.getPickImageResultUri(this, data);
-            if (CropImage.isReadExternalStoragePermissionsRequired(this, imguri)) {
-                uri = imguri;
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
-            } else {
-                startCrop(imguri);
-            }
-        }
         if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
             CropImage.ActivityResult result = CropImage.getActivityResult(data);
             if (resultCode == RESULT_OK) {
-                imageView.setImageURI(result.getUri());
-                uri = result.getUri();
+                Uri resulturi = result.getUri();
+                uri = resulturi;
+                imageView.setImageURI(resulturi);
+            } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
+                Exception error = result.getError();
             }
         }
     }
 
-    private void startCrop(Uri imguri) {
-        CropImage.activity(imguri)
-                .setGuidelines(CropImageView.Guidelines.ON)
-                .setAspectRatio(1,1)
-                .start(this);
-        uri= imguri;
 
-
-    }
 }

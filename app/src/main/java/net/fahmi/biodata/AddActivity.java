@@ -30,6 +30,8 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
+import javax.xml.transform.Result;
+
 public class AddActivity extends AppCompatActivity {
 
     private DBHelper dbHelper;
@@ -67,7 +69,9 @@ public class AddActivity extends AppCompatActivity {
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                CropImage.startPickImageActivity(AddActivity.this);
+
+                CropImage.activity(uri).start(AddActivity.this);
+
             }
         });
 
@@ -97,32 +101,18 @@ public class AddActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CropImage.PICK_IMAGE_PERMISSIONS_REQUEST_CODE
-                && resultCode == Activity.RESULT_OK) {
-            Uri imguri = CropImage.getPickImageResultUri(this, data);
-            if (CropImage.isReadExternalStoragePermissionsRequired(this, imguri)) {
-                uri = imguri;
-                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
-            } else {
-                startCrop(imguri);
-            }
-        }
         if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
             CropImage.ActivityResult result = CropImage.getActivityResult(data);
             if (resultCode == RESULT_OK) {
-                imageView.setImageURI(result.getUri());
-                uri = result.getUri();
+                Uri resulturi = result.getUri();
+                uri = resulturi;
+                imageView.setImageURI(resulturi);
+            } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
+                Exception error = result.getError();
             }
         }
     }
 
-    private void startCrop(Uri imguri) {
-        CropImage.activity(imguri)
-                .setGuidelines(CropImageView.Guidelines.ON)
-                .setAspectRatio(1,1)
-                .start(this);
-        uri= imguri;
-    }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
